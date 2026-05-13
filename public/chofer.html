@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Asepsis - App Chofer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="chofer.css">
+</head>
+<body>
+  <!-- Pantalla de Login (Seleccionar Vehículo) -->
+  <div id="login-screen" class="screen active">
+    <div style="margin-bottom: 40px; margin-top: 40px; text-align: center; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+      <img src="logo2.jpg" alt="Asepsis GPS Logo" style="max-width: 100%; height: auto; max-height: 70px; object-fit: contain;">
+    </div>
+    <h2>Bienvenido, Chofer</h2>
+    <p>Selecciona tu unidad para iniciar ruta</p>
+    
+    <select id="select-vehiculo">
+      <option value="">Cargando unidades...</option>
+    </select>
+    
+    <button id="btn-ingresar" onclick="ingresar()">Ingresar a la Unidad</button>
+  </div>
+
+  <!-- Pantalla Principal de Ruta -->
+  <div id="ruta-screen" class="screen">
+    <div class="header">
+      <div>
+        <div style="font-size:12px; color:#94a3b8">Unidad actual</div>
+        <div id="info-placa" style="font-weight:bold; font-size:18px;">---</div>
+      </div>
+      <button class="btn-logout" onclick="salir()">Salir</button>
+    </div>
+
+    <div class="status-card">
+      <div id="status-text" class="status-badge">Esperando Asignación</div>
+      <h3 id="destino-nombre" style="margin:0; font-size:20px;">Sin ruta asignada</h3>
+      <p id="destino-coords" style="font-size:12px; color:#94a3b8; margin-top:5px;"></p>
+      
+      <!-- Información Extra: Ayudante -->
+      <div id="info-extra-card" style="display:none; margin-top: 15px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; text-align: left; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 4px;">Ayudante Asignado</div>
+        <div id="info-ayudante" style="font-weight: 600; font-size: 15px; color: #f8fafc; display:flex; align-items:center; gap:8px;">
+           <span style="font-size:18px;">👨‍🔧</span> <span id="info-ayudante-txt">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="actions-container" style="display:none; flex-direction:column; gap:15px; margin-top:20px;">
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-navegar" style="flex:1; background-color: #3b82f6; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:6px; font-size:14px; padding:12px;" onclick="abrirNavegador('google')">
+          <svg style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> Maps
+        </button>
+        <button class="btn-navegar" style="flex:1; background-color: #0ea5e9; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:6px; font-size:14px; padding:12px;" onclick="abrirNavegador('waze')">
+          <svg style="width:20px;height:20px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0-9-9c0 1.48.36 2.89 1 4.12l-1.5 4.5 4.5-1.5a8.94 8.94 0 0 0 5 1.48z"></path><path d="M9 10h.01"></path><path d="M15 10h.01"></path></svg> Waze
+        </button>
+      </div>
+      <button class="btn-entregar" onclick="marcarEntregado()">✅ Confirmar Entrega</button>
+    </div>
+
+    <!-- Lista de Destinos Timeline -->
+    <div id="lista-destinos-container" style="display:none; margin-top:30px; text-align:left;">
+      <h4 style="color:#94a3b8; font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:8px;">📋 Hoja de Ruta</h4>
+      <div id="lista-destinos-timeline" style="display:flex; flex-direction:column; gap:10px;">
+        <!-- Inyectado por JS -->
+      </div>
+    </div>
+    
+    <div id="waiting-container" style="text-align:center; margin-top:40px; color:#94a3b8;">
+      <div class="loader"></div>
+      <p style="margin-top:15px; font-size:14px;">Esperando que la central asigne una carga estéril...</p>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let miVehiculo = null;
+
+    // Cargar vehículos para el login
+    async function cargarVehiculos() {
+      const res = await fetch('/api/vehiculos');
+      const data = await res.json();
+      const select = document.getElementById('select-vehiculo');
+      select.innerHTML = '<option value="">Selecciona tu unidad...</option>';
+      data.forEach(v => {
+        select.innerHTML += `<option value="${v._id}">${v.placa} (${v.chofer})</option>`;
+      });
+    }
+
+    cargarVehiculos();
+
+    function ingresar() {
+      const select = document.getElementById('select-vehiculo');
+      if (!select.value) return alert('Selecciona una unidad');
+      
+      const placaText = select.options[select.selectedIndex].text;
+      miVehiculo = { id: select.value, placa: placaText };
+      
+      document.getElementById('login-screen').classList.remove('active');
+      document.getElementById('ruta-screen').classList.add('active');
+      document.getElementById('info-placa').innerText = placaText;
+      
+      actualizarInterfaz(lastData);
+    }
+
+    function salir() {
+      miVehiculo = null;
+      document.getElementById('ruta-screen').classList.remove('active');
+      document.getElementById('login-screen').classList.add('active');
+    }
+
+    let lastData = [];
+    socket.on('actualizarMapa', (data) => {
+      lastData = data;
+      actualizarInterfaz(data);
+    });
+
+    function actualizarInterfaz(data) {
+      if (!miVehiculo) return;
+      
+      const miV = data.find(v => v._id === miVehiculo.id);
+      if (!miV) return;
+
+      const actions = document.getElementById('actions-container');
+      const waiting = document.getElementById('waiting-container');
+      const destinoNombre = document.getElementById('destino-nombre');
+      const statusText = document.getElementById('status-text');
+
+      if (miV.ruta && miV.ruta.length > 0 && miV.puntoActual < miV.ruta.length) {
+        // En Ruta
+        const paradasPrincipales = miV.ruta.filter(p => p.esParadaPrincipal && p.estado !== 'completado');
+        const proximaParada = paradasPrincipales.length > 0 ? paradasPrincipales[0] : miV.ruta[miV.ruta.length-1];
+
+        actions.style.display = 'flex';
+        waiting.style.display = 'none';
+        
+        statusText.innerText = "En Ruta";
+        statusText.className = "status-badge active";
+        destinoNombre.innerText = proximaParada.nombre;
+        
+        document.getElementById('info-extra-card').style.display = miV.ayudante ? 'block' : 'none';
+        document.getElementById('info-ayudante-txt').innerText = miV.ayudante || "Sin ayudante";
+
+        // Render Timeline
+        document.getElementById('lista-destinos-container').style.display = 'block';
+        const timeline = document.getElementById('lista-destinos-timeline');
+        timeline.innerHTML = '';
+        
+        const paradasTotales = miV.ruta.filter(p => p.esParadaPrincipal);
+        paradasTotales.forEach((p, index) => {
+           const isDone = p.estado === 'completado';
+           const isNext = p._id === proximaParada._id;
+           const color = isDone ? '#10b981' : (isNext ? '#3b82f6' : '#64748b');
+           const icon = isDone ? '✓' : (isNext ? '📍' : '○');
+           const opacidad = isDone ? '0.5' : '1';
+           timeline.innerHTML += `
+             <div style="display:flex; align-items:center; gap:12px; opacity:${opacidad}">
+               <div style="width:28px; height:28px; border-radius:50%; background:${color}; color:white; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; flex-shrink:0; box-shadow:0 0 10px ${color}40;">${icon}</div>
+               <div style="flex:1; background:rgba(255,255,255,0.03); padding:12px; border-radius:8px; border-left: 3px solid ${color};">
+                 <div style="font-size:14px; color:white; font-weight:500;">${p.nombre}</div>
+               </div>
+             </div>
+           `;
+        });
+
+        window.currentDestLat = proximaParada.lat;
+        window.currentDestLng = proximaParada.lng;
+
+      } else {
+        // Libre
+        actions.style.display = 'none';
+        waiting.style.display = 'block';
+        
+        statusText.innerText = "Libre";
+        statusText.className = "status-badge";
+        destinoNombre.innerText = "Sin ruta asignada";
+        
+        document.getElementById('info-extra-card').style.display = 'none';
+        document.getElementById('lista-destinos-container').style.display = 'none';
+      }
+    }
+
+    function abrirNavegador(tipo) {
+      if(window.currentDestLat && window.currentDestLng) {
+        let url = '';
+        if (tipo === 'waze') {
+          url = `https://waze.com/ul?ll=${window.currentDestLat},${window.currentDestLng}&navigate=yes`;
+        } else {
+          // Google Maps (Apple Maps en iOS por defecto si es Apple)
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+          url = isIOS 
+            ? `http://maps.apple.com/?q=${window.currentDestLat},${window.currentDestLng}`
+            : `https://www.google.com/maps/dir/?api=1&destination=${window.currentDestLat},${window.currentDestLng}`;
+        }
+        window.open(url, '_blank');
+      }
+    }
+
+    async function marcarEntregado() {
+      if (!miVehiculo) return;
+      if (confirm('¿Confirmas que la carga estéril ha sido entregada en el Centro Médico?')) {
+        await fetch(`/api/vehiculos/${miVehiculo.id}/entregado`, { method: "POST" });
+      }
+    }
+
+    async function limpiarRuta() {
+      if (!miVehiculo) return;
+      if (!confirm('¿Deseas limpiar la ruta de este vehículo?')) return;
+      await fetch(`/api/vehiculos/${miVehiculo.id}/ruta`, { method: "DELETE" });
+      // Forzar recarga de la UI para reflejar cambios
+      location.reload();
+    }
+  </script>
+</body>
+</html>

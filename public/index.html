@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Asepsis GPS</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+
+<body>
+
+  <div id="sidebar">
+    <div class="sidebar-logo" style="text-align: center;">
+      <img src="logo2.jpg" alt="Asepsis GPS Logo"
+        style="max-width: 100%; height: auto; max-height: 50px; object-fit: contain; background: white; padding: 5px; border-radius: 8px;">
+    </div>
+
+    <div class="menu-section"> Logística</div>
+    <ul class="sidebar-menu">
+      <li><button id="btn-nav-rutas" class="active" onclick="mostrarVista('rutas')">ðŸš Rutas y Despachos</button></li>
+      <li><button id="btn-nav-directorio" onclick="mostrarVista('directorio')">ðŸ¥ Centros Médicos</button></li>
+      <li><button id="btn-nav-mapa" onclick="mostrarVista('mapa')">ðŸ—ºï¸ Seguimiento GPS</button></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="top-header">
+      <div class="header-title">
+        <div class="icon-title">🚚</div>
+        <div>
+          <h2>Rutas </h2>
+          <p>Gestión de rutas, paradas y despachos</p>
+        </div>
+      </div>
+      <button class="btn-naranja" onclick="abrirModalAsignar()">
+        + Asignar punto de ruta
+      </button>
+    </div>
+
+    <div class="content-body" id="vista-rutas">
+      <div class="table-section">
+        <!-- Filtros Bar -->
+        <div class="filtros-bar">
+          <div class="filtro-item">📅 Hoy</div>
+          <div class="filtro-item">Todas las unidades</div>
+          <div class="filtro-item">Todos los estados</div>
+        </div>
+
+        <div class="table-container">
+          <div class="table-scroll">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>UNIDAD</th>
+                  <th>CHOFER</th>
+                  <th>TIPO</th>
+                  <th>AYUDANTE</th>
+                  <th>HORARIO</th>
+                  <th>DESTINOS</th>
+                  <th style="text-align:center;">PARADAS</th>
+                  <th>ESTADO</th>
+                  <th style="text-align:center;">ACCIÓN</th>
+                </tr>
+              </thead>
+              <tbody id="lista">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nueva Vista de Mapa a pantalla completa -->
+    <div class="content-body" id="vista-mapa" style="display: none; padding: 0;">
+      <div class="map-section" style="width: 100%; border-radius: 0; border: none;">
+        <div id="map"></div>
+      </div>
+    </div>
+
+    <!-- Nueva Vista de Directorio (Sin Modal) -->
+    <div class="content-body" id="vista-directorio" style="display: none; gap: 20px;">
+      <div
+        style="width: 350px; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); padding: 25px; display: flex; flex-direction: column;">
+        <h3 id="form-centro-titulo" style="margin-top: 0; color: white; margin-bottom: 20px; font-size: 18px;">Nuevo
+          Centro Médico</h3>
+        <input type="hidden" id="editandoCentroId" value="">
+        <input type="text" id="nuevoCentroNombre" class="input-modern" placeholder="Nombre (ej. Clínica San Pablo)">
+        <input type="text" id="nuevoCentroDir" class="input-modern" placeholder="Dirección exacta">
+        <label class="form-group-label" style="margin-bottom: 8px; color: var(--text-muted); font-size: 12px; font-weight: 600;">Tipo de Centro</label>
+        <div class="tipo-selector-container" style="display: flex; gap: 8px; margin-bottom: 20px;">
+          <input type="hidden" id="nuevoCentroTipo" value="">
+          <button type="button" class="btn-tipo" onclick="seleccionarTipo('hospital')" id="btn-tipo-hospital" style="flex: 1; padding: 12px 5px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-family: 'Inter';">
+            <span style="font-size: 18px;">ðŸ¥</span> Hospital
+          </button>
+          <button type="button" class="btn-tipo" onclick="seleccionarTipo('clinica')" id="btn-tipo-clinica" style="flex: 1; padding: 12px 5px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-family: 'Inter';">
+            <span style="font-size: 18px;">🩺</span> Clínica
+          </button>
+          <button type="button" class="btn-tipo" onclick="seleccionarTipo('particular')" id="btn-tipo-particular" style="flex: 1; padding: 12px 5px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-family: 'Inter';">
+            <span style="font-size: 18px;">ðŸ </span> Particular
+          </button>
+        </div>
+        <button onclick="guardarCentro()" class="btn-naranja"
+          style="justify-content: center; width: 100%; margin-top: auto; padding: 12px;">
+          + Guardar Centro
+        </button>
+        <button onclick="limpiarFormularioCentro()" class="btn-action"
+          style="width: 100%; margin-top: 10px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 6px; padding: 10px;">
+          Cancelar Limpiar
+        </button>
+      </div>
+
+      <div class="table-container" style="flex: 1; padding: 25px; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="margin: 0; color: white; font-size: 18px;">Directorio de Centros</h3>
+          <input type="text" id="buscarEnDirectorio" class="input-modern" oninput="filtrarDirectorio()"
+            placeholder="ðŸ” Buscar por nombre o dirección..." style="width: 300px; margin: 0;">
+        </div>
+        <div id="lista-centros-inline" class="table-scroll" style="max-height: 100%;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    const map = L.map('map', { zoomControl: false }).setView([-12.0852, -76.9772], 14);
+
+    // Controles de zoom abajo a la derecha
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Capa de mapa clara premium (CartoDB Light Matter)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
+    }).addTo(map);
+
+    const socket = io();
+    const markers = {};
+    const rutasLines = {};
+    const stopsMarkers = {}; // Para Req 4 y 5
+    const centrosMarkers = {}; // Para centros médicos
+    let listaCentrosGlobal = [];
+
+    const getIcon = (tipoRaw) => {
+      const tipo = (tipoRaw || 'clinica').toLowerCase().trim();
+      let emoji = "ðŸš";
+      if (tipo === "moto") emoji = "ðŸï¸";
+      if (tipo === "camion") emoji = "🚛";
+
+      // Iconos para Centros Médicos
+      if (tipo === "hospital") emoji = "ðŸ¥";
+      if (tipo === "clinica") emoji = "🩺";
+      if (tipo === "particular") emoji = "ðŸ ";
+
+      let bgColors = "linear-gradient(135deg, var(--accent-teal), #3b82f6)";
+      if (tipo === "hospital") bgColors = "linear-gradient(135deg, #ef4444, #b91c1c)";
+      if (tipo === "clinica") bgColors = "linear-gradient(135deg, #3b82f6, #1d4ed8)";
+      if (tipo === "particular") bgColors = "linear-gradient(135deg, #f59e0b, #d97706)";
+
+      return L.divIcon({
+        className: 'custom-div-icon',
+        html: `<div class="marker-pin" style="background: ${bgColors}"></div><div class="marker-icon">${emoji}</div>`,
+        iconSize: [30, 42],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -35]
+      });
+    };
+
+    async function cargar() {
+      await cargarCentros();
+      const res = await fetch('/api/vehiculos');
+      const data = await res.json();
+      actualizar(data);
+    }
+
+    socket.on("actualizarMapa", actualizar);
+    socket.on("actualizarCentros", cargarCentros);
+
+    async function cargarCentros() {
+      const res = await fetch('/api/centros');
+      listaCentrosGlobal = await res.json();
+
+      // Limpiar marcadores viejos
+      Object.values(centrosMarkers).forEach(m => map.removeLayer(m));
+
+      listaCentrosGlobal.forEach(c => {
+        const marker = L.marker([c.lat, c.lng], { icon: getIcon(c.tipo || 'clinica') })
+          .addTo(map)
+          .bindPopup(`
+            <div style="font-family:'Outfit';">
+              <b style="font-size:14px;">${c.nombre}</b><br>
+              <span style="font-size:11px; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px; display:inline-block; margin:4px 0;">
+                ${(c.tipo || 'clinica').toUpperCase()}
+              </span><br>
+              <span style="font-size:12px;color:gray">${c.direccion}</span>
+            </div>
+          `);
+        centrosMarkers[c._id] = marker;
+      });
+
+      renderDirectorio();
+      renderizarSelectCentros(listaCentrosGlobal);
+    }
+
+    function mostrarVista(vista) {
+      document.getElementById('vista-rutas').style.display = vista === 'rutas' ? 'flex' : 'none';
+      document.getElementById('vista-directorio').style.display = vista === 'directorio' ? 'flex' : 'none';
+      document.getElementById('vista-mapa').style.display = vista === 'mapa' ? 'flex' : 'none';
+
+      document.getElementById('btn-nav-rutas').classList.toggle('active', vista === 'rutas');
+      document.getElementById('btn-nav-directorio').classList.toggle('active', vista === 'directorio');
+      document.getElementById('btn-nav-mapa').classList.toggle('active', vista === 'mapa');
+
+      if (vista === 'mapa') {
+        setTimeout(() => map.invalidateSize(), 100);
+      }
+    }
+
+    function renderDirectorio(query = "") {
+      const contenedorModal = document.getElementById("lista-centros-inline");
+      if (!contenedorModal) return;
+      contenedorModal.innerHTML = "";
+
+      const filtrados = listaCentrosGlobal.filter(c =>
+        c.nombre.toLowerCase().includes(query.toLowerCase()) ||
+        c.direccion.toLowerCase().includes(query.toLowerCase())
+      );
+
+      filtrados.forEach(c => {
+        const card = document.createElement("div");
+        card.className = "vehiculo-card";
+        card.style.borderLeft = `5px solid ${c.tipo === 'hospital' ? '#ef4444' : (c.tipo === 'particular' ? '#f59e0b' : '#3b82f6')}`;
+        card.style.background = "var(--bg-sidebar)";
+        card.style.color = "var(--text-main)";
+        card.style.marginBottom = "10px";
+        card.style.borderRadius = "8px";
+        card.style.border = "1px solid var(--border-color)";
+
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding: 15px;">
+            <div onclick="mostrarVista('mapa'); setTimeout(() => map.setView([${c.lat}, ${c.lng}], 17), 100);" style="cursor:pointer; flex:1;">
+              <div style="font-weight:bold; font-size:14px;">${c.nombre}</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">${c.direccion}</div>
+            </div>
+            <div style="display:flex; gap:10px;">
+              <button onclick="prepararEdicion('${c._id}', '${c.nombre}', '${c.direccion}', '${c.tipo}')" style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:white; border-radius:6px; cursor:pointer; font-size:14px; padding:6px 10px;">âœï¸</button>
+              <button onclick="eliminarCentro('${c._id}')" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; cursor:pointer; font-size:14px; padding:6px 10px;">ðŸ—‘ï¸</button>
+            </div>
+          </div>
+        `;
+        contenedorModal.appendChild(card);
+      });
+    }
+
+    function filtrarDirectorio() {
+      const query = document.getElementById("buscarEnDirectorio").value;
+      renderDirectorio(query);
+    }
+
+    // Funciones para el buscador personalizado
+    function filtrarCentros() {
+      const query = document.getElementById("buscadorCentro").value.toLowerCase();
+      const sugerencias = document.getElementById("sugerenciasCentros");
+
+      if (!query) {
+        sugerencias.style.display = "none";
+        return;
+      }
+
+      const filtrados = listaCentrosGlobal.filter(c =>
+        c.nombre.toLowerCase().includes(query) ||
+        c.direccion.toLowerCase().includes(query)
+      );
+
+      sugerencias.innerHTML = "";
+      if (filtrados.length === 0) {
+        sugerencias.innerHTML = `<div style="padding:10px; color:gray; font-size:13px;">No se encontraron resultados</div>`;
+      } else {
+        filtrados.forEach(c => {
+          const div = document.createElement("div");
+          div.style.padding = "10px";
+          div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
+          div.style.cursor = "pointer";
+          div.style.fontSize = "14px";
+          div.innerHTML = `<strong>${c.nombre}</strong><br><span style="font-size:11px; color:gray;">${c.direccion}</span>`;
+          div.onclick = () => seleccionarCentro(c);
+          div.onmouseover = () => div.style.background = "rgba(255,255,255,0.1)";
+          div.onmouseout = () => div.style.background = "transparent";
+          sugerencias.appendChild(div);
+        });
+      }
+      sugerencias.style.display = "block";
+    }
+
+    let centrosTemporalesParaAsignar = [];
+
+    function renderizarCentrosTemporales() {
+      const div = document.getElementById("listaCentrosSeleccionados");
+      if (!div) return;
+      div.innerHTML = "";
+      centrosTemporalesParaAsignar.forEach((c, idx) => {
+        div.innerHTML += `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:rgba(0,0,0,0.2); margin-bottom:5px; border-radius:5px; font-size:13px; color:white; border: 1px solid rgba(255,255,255,0.05);">
+            <span><b>${idx + 1}.</b> ${c.nombre}</span>
+            <button onclick="removerCentroTemporal('${c._id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-weight:bold;font-size:14px;">✖</button>
+          </div>
+        `;
+      });
+    }
+
+    function removerCentroTemporal(id) {
+      centrosTemporalesParaAsignar = centrosTemporalesParaAsignar.filter(c => c._id !== id);
+      renderizarCentrosTemporales();
+    }
+
+    function seleccionarCentro(c) {
+      if (centrosTemporalesParaAsignar.length >= 7) {
+        return alert("MÃ¡ximo de 7 centros permitidos a la vez.");
+      }
+      if (centrosTemporalesParaAsignar.find(x => x._id === c._id)) {
+        return alert("Este centro ya está en la lista.");
+      }
+      centrosTemporalesParaAsignar.push(c);
+      document.getElementById("buscadorCentro").value = "";
+      document.getElementById("sugerenciasCentros").style.display = "none";
+      renderizarCentrosTemporales();
+    }
+
+    function seleccionarTipo(tipo) {
+      document.getElementById("nuevoCentroTipo").value = tipo;
+      
+      // Resetear estilos de todos los botones
+      document.querySelectorAll(".btn-tipo").forEach(btn => {
+        btn.classList.remove("active");
+        btn.style.background = "rgba(255,255,255,0.05)";
+        btn.style.borderColor = "var(--border-color)";
+        btn.style.color = "var(--text-muted)";
+      });
+
+      // Aplicar estilo al seleccionado
+      const btn = document.getElementById(`btn-tipo-${tipo}`);
+      if (btn) {
+        btn.classList.add("active");
+        let color = "var(--accent-teal)";
+        let bg = "rgba(6, 182, 212, 0.1)";
+        
+        if (tipo === 'hospital') { color = "#ef4444"; bg = "rgba(239, 68, 68, 0.1)"; }
+        if (tipo === 'clinica') { color = "#3b82f6"; bg = "rgba(59, 130, 246, 0.1)"; }
+        if (tipo === 'particular') { color = "#f59e0b"; bg = "rgba(245, 158, 11, 0.1)"; }
+        
+        btn.style.borderColor = color;
+        btn.style.color = color;
+        btn.style.background = bg;
+      }
+    }
+
+    function limpiarFormularioCentro() {
+      document.getElementById("editandoCentroId").value = "";
+      document.getElementById("form-centro-titulo").innerText = "Nuevo Centro Médico";
+      document.getElementById("nuevoCentroNombre").value = "";
+      document.getElementById("nuevoCentroDir").value = "";
+      document.getElementById("nuevoCentroTipo").value = "";
+      
+      // Resetear botones
+      document.querySelectorAll(".btn-tipo").forEach(btn => {
+        btn.classList.remove("active");
+        btn.style.background = "rgba(255,255,255,0.05)";
+        btn.style.borderColor = "var(--border-color)";
+        btn.style.color = "var(--text-muted)";
+      });
+    }
+
+    function abrirModalCentro() {
+      mostrarVista('directorio');
+      limpiarFormularioCentro();
+      document.getElementById('nuevoCentroNombre').focus();
+    }
+
+    function cerrarModalCentro() {
+      limpiarFormularioCentro();
+    }
+
+    function prepararEdicion(id, nombre, direccion, tipo) {
+      mostrarVista('directorio');
+      document.getElementById("editandoCentroId").value = id;
+      document.getElementById("form-centro-titulo").innerText = "Editar Centro Médico";
+      document.getElementById("nuevoCentroNombre").value = nombre;
+      document.getElementById("nuevoCentroDir").value = direccion;
+      seleccionarTipo(tipo.toLowerCase().trim());
+    }
+
+    function abrirModalListaCentros() {
+      mostrarVista('directorio');
+    }
+
+    function cerrarModalListaCentros() {
+      mostrarVista('rutas');
+    }
+
+    async function guardarCentro() {
+      const id = document.getElementById("editandoCentroId").value;
+      const nombre = document.getElementById("nuevoCentroNombre").value;
+      const direccion = document.getElementById("nuevoCentroDir").value;
+      const tipo = document.getElementById("nuevoCentroTipo").value.toLowerCase().trim();
+
+      if (!nombre || !direccion || !tipo) return alert("Por favor completa todos los campos.");
+
+      const url = id ? `/api/centros/${id}` : '/api/centros';
+      const method = id ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre, direccion, tipo })
+        });
+        const data = await res.json();
+        if (data.error) alert("Error: " + data.error);
+        else {
+          cerrarModalCentro();
+          cargarCentros(); // Recargar todo
+          if (!id) map.setView([data.lat, data.lng], 16);
+        }
+      } catch (e) {
+        alert("Error de conexión");
+      }
+    }
+
+    async function eliminarCentro(id) {
+      if (confirm("¿Seguro que quieres eliminar este centro?")) {
+        await fetch(`/api/centros/${id}`, { method: 'DELETE' });
+        cargarCentros(); // Refrescar la lista y el mapa
+      }
+    }
+    // Variables y Funciones para el Modal
+    let vehiculoModalAbierto = null;
+    let lastVehiculosData = [];
+
+    function actualizar(data) {
+      lastVehiculosData = data;
+      document.getElementById("lista").innerHTML = "";
+
+      // Ordenar: Primero los "En Ruta", luego los "Libre", y alfabéticamente por placa
+      data.sort((a, b) => {
+        const aEnRuta = a.ruta && a.ruta.length > 0 && a.puntoActual < a.ruta.length ? 1 : 0;
+        const bEnRuta = b.ruta && b.ruta.length > 0 && b.puntoActual < b.ruta.length ? 1 : 0;
+
+        if (aEnRuta !== bEnRuta) {
+          return bEnRuta - aEnRuta;
+        }
+        return a.placa.localeCompare(b.placa);
+      });
+
+      // Llenar select solo una vez
+      const select = document.getElementById("vehiculoSelect");
+      if (select.options.length === 1) {
+        data.forEach(v => {
+          select.innerHTML += `<option value="${v._id}">${v.placa} (${v.chofer})</option>`;
+        });
+      }
+
+      data.forEach(v => {
+
+        const lat = v.latitud || -12.0852;
+        const lng = v.longitud || -76.9772;
+
+        // 1. ICONOS Y MARCADORES
+        if (!markers[v._id]) {
+          markers[v._id] = L.marker([lat, lng], { icon: getIcon(v.tipo) })
+            .addTo(map)
+            .bindPopup(`<b>${v.placa}</b><br>Chofer: ${v.chofer}<br>Tipo: ${v.tipo}<br>Vel. Prom: ${v.velocidad} km/h`);
+
+          // Req 11: Centrar mapa al click
+          markers[v._id].on('click', () => {
+            map.setView([lat, lng], 16);
+          });
+        } else {
+          markers[v._id].setLatLng([lat, lng]);
+          markers[v._id].getPopup().setContent(`<b>${v.placa}</b><br>Chofer: ${v.chofer}<br>Tipo: ${v.tipo}<br>Vel. Prom: ${v.velocidad} km/h`);
+        }
+
+        // 2. Limpiar marcadores de paradas anteriores
+        if (stopsMarkers[v._id]) {
+          stopsMarkers[v._id].forEach(m => map.removeLayer(m));
+        }
+        stopsMarkers[v._id] = [];
+
+        // 3. DIBUJAR RUTA FUTURA Y PARADAS NUMERADAS
+        if (v.ruta && v.ruta.length > 0) {
+          const puntosPendientes = v.ruta.filter(r => r.estado !== 'completado');
+          const puntosRuta = [[lat, lng], ...puntosPendientes.filter(p => p.lat !== undefined && p.lng !== undefined).map(p => [p.lat, p.lng])];
+
+          if (!rutasLines[v._id]) {
+            rutasLines[v._id] = L.polyline(puntosRuta, { color: "#06b6d4", weight: 4 }).addTo(map);
+          } else {
+            rutasLines[v._id].setLatLngs(puntosRuta);
+          }
+
+          // Dibujar paradas numeradas (1, 2, 3) SOLO en los hospitales
+          let contadorParadas = 1;
+          v.ruta.forEach((punto, index) => {
+            if (!punto.esParadaPrincipal) return; // Ignorar las esquinas de las calles
+            if (punto.lat === undefined || punto.lng === undefined) return; // Ignorar puntos corruptos
+
+            const color = punto.estado === "completado" ? "#10b981" : "#ef4444"; // verde o rojo
+            const num = contadorParadas;
+            contadorParadas++;
+
+            const numberIcon = L.divIcon({
+              className: 'custom-div-icon',
+              html: `<div style="background:${color}; color:white; width:24px; height:24px; border-radius:50%; text-align:center; line-height:24px; font-weight:bold; font-size:12px; box-shadow:0 2px 5px rgba(0,0,0,0.3); border:2px solid white;">${num}</div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
+            });
+
+            const stopMarker = L.marker([punto.lat, punto.lng], { icon: numberIcon })
+              .addTo(map)
+              .bindPopup(`<b>${punto.nombre}</b><br>Estado: ${punto.estado ? punto.estado.toUpperCase() : 'PENDIENTE'}`);
+
+            stopsMarkers[v._id].push(stopMarker);
+          });
+
+        } else {
+          if (rutasLines[v._id]) {
+            map.removeLayer(rutasLines[v._id]);
+            delete rutasLines[v._id];
+          }
+        }
+
+        // Req 6 y 8: Panel lateral y Botón Manual
+        const isEnRuta = v.ruta && v.ruta.length > 0 && v.puntoActual < v.ruta.length;
+        const vehiculoEstado = isEnRuta ? "En Ruta" : "Libre";
+        const estadoClase = isEnRuta ? "badge-ruta" : "badge-libre";
+
+        // Contar paradas (Req 6)
+        const paradasTotales = v.ruta ? v.ruta.filter(p => p.esParadaPrincipal).length : 0;
+        const paradasCompletadas = v.ruta ? v.ruta.filter(p => p.esParadaPrincipal && p.estado === 'completado').length : 0;
+        const paradasTxt = isEnRuta ? `${paradasCompletadas}/${paradasTotales}` : '-';
+
+        const paradasPrincipales = v.ruta ? v.ruta.filter(p => p.esParadaPrincipal) : [];
+        const nombresDestinos = isEnRuta ? (paradasPrincipales.map(p => p.nombre).join(', ') || '-') : '-';
+        const horarioTxt = isEnRuta && v.horaSalida ? `${v.horaSalida} - ${v.horaRegreso}` : '-';
+        const ayudanteTxt = isEnRuta && v.ayudante ? v.ayudante : '-';
+
+        const btnEntregar = isEnRuta
+          ? `<button class="btn-action btn-entregar" title="Marcar Entregado" onclick="entregarManual('${v._id}'); event.stopPropagation();">✓</button>`
+          : ``;
+
+        const btnVerRuta = isEnRuta
+          ? `<button class="btn-action btn-ver-ruta" title="Ver Ruta" onclick="abrirVentanaRuta('${v._id}'); event.stopPropagation();">📋</button>`
+          : ``;
+
+        document.getElementById("lista").innerHTML += `
+      <tr onclick="mostrarVista('mapa'); setTimeout(() => { map.setView([${lat}, ${lng}], 16); markers['${v._id}'].openPopup(); }, 100);">
+        <td><b>${v.placa}</b></td>
+        <td style="color:var(--text-muted)">${v.chofer}</td>
+        <td style="color:var(--text-muted); text-transform:capitalize;">${v.tipo}</td>
+        <td style="color:var(--text-muted)">${ayudanteTxt}</td>
+        <td style="color:var(--text-muted)">
+          ${horarioTxt}
+          ${isEnRuta ? `<span style="cursor:pointer; margin-left:8px; font-size:12px; opacity:0.6; hover:opacity:1" onclick="abrirModalEditarHorario('${v._id}', '${v.horaSalida}', '${v.horaRegreso}'); event.stopPropagation();" title="Editar Horario">âœï¸</span>` : ''}
+        </td>
+        <td style="color:var(--text-muted); max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${nombresDestinos}">${nombresDestinos}</td>
+        <td style="text-align:center;"><b>${paradasTxt}</b></td>
+        <td><span class="badge ${estadoClase}">${vehiculoEstado}</span></td>
+        <td>
+          <div style="display:flex; gap:5px; justify-content:center;">
+            ${btnVerRuta}
+            ${btnEntregar}
+          </div>
+        </td>
+      </tr>
+    `;
+      });
+
+      // Si el modal está abierto, actualizar su contenido también
+      if (vehiculoModalAbierto) {
+        abrirVentanaRuta(vehiculoModalAbierto, data);
+      }
+    }
+
+    // Variables y Funciones para el Modal
+
+    function abrirVentanaRuta(id, vehiculosData = null) {
+      vehiculoModalAbierto = id;
+      const data = vehiculosData || lastVehiculosData;
+      const v = data.find(veh => veh._id === id);
+
+      if (!v || !v.ruta || v.ruta.length === 0) {
+        cerrarVentanaRuta();
+        return;
+      }
+
+      document.getElementById("modal-vehiculo-titulo").innerText = `Ruta de ${v.placa}`;
+
+      let listaHTML = '';
+      let numParada = 1;
+      v.ruta.forEach(punto => {
+        if (punto.esParadaPrincipal) {
+          const icono = punto.estado === "completado" ? "ðŸŸ¢" : "🔴";
+          const texto = punto.estado === "completado" ? "Entregado" : "Pendiente";
+          const opacity = punto.estado === "completado" ? "0.6" : "1";
+
+          listaHTML += `
+        <div style="font-size: 14px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; opacity: ${opacity};">
+          <span style="max-width: 65%;"><b>${numParada}.</b> ${punto.nombre}</span>
+          <span>${icono} ${texto}</span>
+        </div>
+      `;
+          numParada++;
+        }
+      });
+
+      document.getElementById("modal-ruta-lista").innerHTML = listaHTML;
+      document.getElementById("modal-ruta").style.display = "flex";
+    }
+
+    function cerrarVentanaRuta() {
+      vehiculoModalAbierto = null;
+      document.getElementById("modal-ruta").style.display = "none";
+    }
+
+    async function limpiarRutaActual() {
+      if (!vehiculoModalAbierto) return;
+      if (confirm("¿Seguro que quieres borrar la ruta actual de este vehículo? Volverá a estar Libre.")) {
+        await fetch(`/api/vehiculos/${vehiculoModalAbierto}/ruta`, { method: 'DELETE' });
+        cerrarVentanaRuta();
+      }
+    }
+
+    // Modal de Asignación
+    function abrirModalAsignar() {
+      centrosTemporalesParaAsignar = [];
+      renderizarCentrosTemporales();
+      document.getElementById("buscadorCentro").value = "";
+      document.getElementById("modal-asignar").style.display = "flex";
+    }
+    function cerrarModalAsignar() {
+      document.getElementById("modal-asignar").style.display = "none";
+      if (document.getElementById("inputAyudante")) document.getElementById("inputAyudante").value = "";
+      if (document.getElementById("inputObservaciones")) document.getElementById("inputObservaciones").value = "";
+    }
+
+    // Modal Directorio
+    function abrirModalListaCentros() {
+      document.getElementById("modal-lista-centros").style.display = "flex";
+    }
+    function cerrarModalListaCentros() {
+      document.getElementById("modal-lista-centros").style.display = "none";
+    }
+
+    async function asignarRutaYcerrar() {
+      await asignarRuta();
+    }
+
+    async function asignarRuta() {
+      const vId = document.getElementById("vehiculoSelect").value;
+      if (!vId) return alert("Selecciona unidad");
+      if (centrosTemporalesParaAsignar.length === 0) return alert("Selecciona al menos un centro médico");
+
+      const payload = {
+        centros: centrosTemporalesParaAsignar,
+        ayudante: document.getElementById("inputAyudante") ? document.getElementById("inputAyudante").value : "",
+        observaciones: document.getElementById("inputObservaciones") ? document.getElementById("inputObservaciones").value : "",
+        horaSalida: document.getElementById("inputHoraSalida") ? document.getElementById("inputHoraSalida").value : "",
+        horaRegreso: document.getElementById("inputHoraRegreso") ? document.getElementById("inputHoraRegreso").value : ""
+      };
+
+      const res = await fetch(`/api/vehiculos/${vId}/ruta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        alert("âš ï¸ " + data.error);
+      } else {
+        alert(`âœ… Carga estéril despachada exitosamente a ${centrosTemporalesParaAsignar.length} centros.`);
+        cerrarModalAsignar();
+      }
+    }
+
+    async function entregarManual(id) {
+      await fetch(`/api/vehiculos/${id}/entregado`, { method: "POST" });
+    }
+
+    // Funciones para Editar Horario
+    let vehiculoIdEditandoHorario = null;
+    function abrirModalEditarHorario(id, salida, regreso) {
+      vehiculoIdEditandoHorario = id;
+      document.getElementById("editSalida").value = salida || "06:00";
+      document.getElementById("editRegreso").value = regreso || "14:00";
+      document.getElementById("modal-editar-horario").style.display = "flex";
+    }
+
+    function cerrarModalEditarHorario() {
+      document.getElementById("modal-editar-horario").style.display = "none";
+    }
+
+    async function guardarNuevoHorario() {
+      const horaSalida = document.getElementById("editSalida").value;
+      const horaRegreso = document.getElementById("editRegreso").value;
+
+      await fetch(`/api/vehiculos/${vehiculoIdEditandoHorario}/horario`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ horaSalida, horaRegreso })
+      });
+
+      cerrarModalEditarHorario();
+    }
+
+    cargar();
+    setTimeout(cargar, 1000); // 1 sec delay for map div
+  </script>
+
+  <!-- Modal Ventana Flotante de Rutas -->
+  <div id="modal-ruta" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-vehiculo-titulo">Ruta</h3>
+        <button onclick="cerrarVentanaRuta()" class="btn-close">✖</button>
+      </div>
+      <div id="modal-ruta-lista" class="modal-body">
+        <!-- Paradas renderizadas dinÃ¡micamente -->
+      </div>
+      <div class="modal-footer">
+        <button onclick="limpiarRutaActual()"
+          style="background:#ef4444; width:100%; padding: 12px; border:none; border-radius: 8px; color:white; font-weight:bold; font-family:'Outfit'; cursor:pointer;">ðŸ—‘ï¸
+          Cancelar / Limpiar Ruta</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal Ventana Flotante de Asignar Ruta (Nuevo Diseño Grid) -->
+  <style>
+    .modal-grid-content {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 750px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .grid-form-layout {
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 25px;
+      margin-top: 15px;
+    }
+
+    .form-group-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .form-group-label span {
+      color: #ef4444;
+    }
+
+    .grid-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+  </style>
+  <div id="modal-asignar" class="modal-overlay">
+    <div class="modal-grid-content">
+      <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <div
+            style="width: 45px; height: 45px; background: rgba(249, 115, 22, 0.1); color: var(--accent-orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+            📦</div>
+          <h3 style="margin: 0; font-size: 22px; font-weight: 600; color: white;">Nueva Ruta</h3>
+        </div>
+        <button onclick="cerrarModalAsignar()" class="btn-close"
+          style="align-self: flex-start; margin-top: 5px;">✖</button>
+      </div>
+
+      <div class="modal-body" style="padding-top: 0;">
+        <div class="grid-form-layout">
+
+          <div class="grid-row">
+            <div>
+              <label class="form-group-label">Fecha</label>
+              <input type="date" class="input-modern" style="margin-bottom:0;" id="fechaDespacho">
+            </div>
+            <div>
+              <label class="form-group-label">Hora Salida</label>
+              <input type="time" id="inputHoraSalida" class="input-modern" style="margin-bottom:0;" value="06:00">
+            </div>
+            <div>
+              <label class="form-group-label">Hora Regreso Est.</label>
+              <input type="time" id="inputHoraRegreso" class="input-modern" style="margin-bottom:0;" value="14:00">
+            </div>
+          </div>
+
+          <div class="grid-row">
+            <div>
+              <label class="form-group-label">Unidad <span>*</span></label>
+              <select id="vehiculoSelect" class="input-modern" style="margin-bottom:0;">
+                <option value="" style="color:black;">Selecciona unidad...</option>
+              </select>
+            </div>
+            <div style="grid-column: span 2; position: relative;">
+              <label class="form-group-label">Sedes o Destinos Médicos (Hasta 7) <span>*</span></label>
+              <input type="text" id="buscadorCentro" class="input-modern" oninput="filtrarCentros()"
+                placeholder="ðŸ” Buscar sede para agregar..." style="margin-bottom:0;">
+              <div id="sugerenciasCentros"
+                style="display:none; position:absolute; top:70px; left:0; width:100%; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; z-index:100; max-height:200px; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+              </div>
+            </div>
+          </div>
+
+          <!-- Lista de Seleccionados Inline -->
+          <div id="listaCentrosSeleccionados" style="margin-bottom: 20px; max-height: 150px; overflow-y: auto;"></div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px;">
+            <div>
+              <label class="form-group-label" style="display:flex; justify-content:space-between;">Ayudante <a href="#"
+                  onclick="agregarAyudanteRapido(); return false;"
+                  style="color:var(--naranja); font-weight:bold; font-size:12px; text-decoration:none;">+
+                  Nuevo</a></label>
+              <select id="inputAyudante" class="input-modern" style="margin-bottom:0;">
+                <option value="" style="color:black;">Sin ayudante...</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-group-label">Observaciones</label>
+              <input type="text" id="inputObservaciones" class="input-modern" placeholder="Observaciones opcionales..."
+                style="margin-bottom:0;">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer" style="border-top: none; display: flex; justify-content: flex-end; padding-top: 0;">
+        <button onclick="asignarRutaYcerrar()" class="btn-naranja">🚀 Despachar a Ruta</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Set auto date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('fechaDespacho').value = today;
+
+    // Ayudantes DinÃ¡micos
+    async function cargarAyudantes() {
+      try {
+        const res = await fetch("/api/ayudantes");
+        const data = await res.json();
+        const sel = document.getElementById("inputAyudante");
+        sel.innerHTML = '<option value="" style="color:black;">Sin ayudante...</option>';
+        data.forEach(a => {
+          sel.innerHTML += `<option value="${a.nombre}" style="color:black;">${a.nombre}</option>`;
+        });
+      } catch (e) {
+        console.error("Error cargando ayudantes:", e);
+      }
+    }
+
+    async function agregarAyudanteRapido() {
+      const nombre = prompt("👤 Ingresa el nombre completo del nuevo ayudante:");
+      if (!nombre || nombre.trim() === "") return;
+      try {
+        await fetch("/api/ayudantes", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre: nombre.trim() })
+        });
+        cargarAyudantes();
+        alert(`✅ El ayudante ${nombre} ha sido agregado exitosamente a la base de datos.`);
+      } catch (e) {
+        alert("Error al guardar ayudante.");
+      }
+    }
+
+    // Inicializar
+    cargarAyudantes();
+  </script>
+
+  <!-- Modal Editar Horario -->
+  <div id="modal-editar-horario" class="modal-overlay">
+    <div class="modal-content" style="max-width: 350px;">
+      <div class="modal-header">
+        <h3>Editar Horario de Ruta</h3>
+        <button onclick="cerrarModalEditarHorario()" class="btn-close">✖</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div>
+            <label class="form-group-label" style="color:var(--text-muted); font-size:12px;">Salida</label>
+            <input type="time" id="editSalida" class="input-modern">
+          </div>
+          <div>
+            <label class="form-group-label" style="color:var(--text-muted); font-size:12px;">Regreso Est.</label>
+            <input type="time" id="editRegreso" class="input-modern">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="guardarNuevoHorario()" class="btn-naranja" style="width: 100%; justify-content: center;">Actualizar Horario</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

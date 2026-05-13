@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.gemini/
+poblar_conductores.js
+poblar_conductores_full.js
