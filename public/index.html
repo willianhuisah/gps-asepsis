@@ -17,9 +17,9 @@
 
     <div class="menu-section"> Logística</div>
     <ul class="sidebar-menu">
-      <li><button id="btn-nav-rutas" class="active" onclick="mostrarVista('rutas')">ðŸš Rutas y Despachos</button></li>
-      <li><button id="btn-nav-directorio" onclick="mostrarVista('directorio')">ðŸ¥ Centros Médicos</button></li>
-      <li><button id="btn-nav-mapa" onclick="mostrarVista('mapa')">ðŸ—ºï¸ Seguimiento GPS</button></li>
+      <li><button id="btn-nav-rutas" class="active" onclick="mostrarVista('rutas')">🚐 Rutas y Despachos</button></li>
+      <li><button id="btn-nav-directorio" onclick="mostrarVista('directorio')">🏥 Centros Médicos</button></li>
+      <li><button id="btn-nav-mapa" onclick="mostrarVista('mapa')">🗺️ Seguimiento GPS</button></li>
     </ul>
   </div>
 
@@ -90,13 +90,13 @@
         <div class="tipo-selector-container" style="display: flex; gap: 8px; margin-bottom: 20px;">
           <input type="hidden" id="nuevoCentroTipo" value="">
           <button type="button" class="btn-tipo" onclick="seleccionarTipo('hospital')" id="btn-tipo-hospital" style="flex: 1; padding: 12px 5px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-family: 'Inter';">
-            <span style="font-size: 18px;">ðŸ¥</span> Hospital
+            <span style="font-size: 18px;">🏥</span> Hospital
           </button>
           <button type="button" class="btn-tipo" onclick="seleccionarTipo('clinica')" id="btn-tipo-clinica" style="flex: 1; padding: 12px 5px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-family: 'Inter';">
             <span style="font-size: 18px;">🩺</span> Clínica
           </button>
           <button type="button" class="btn-tipo" onclick="seleccionarTipo('particular')" id="btn-tipo-particular" style="flex: 1; padding: 12px 5px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-muted); cursor: pointer; font-size: 11px; font-weight: 600; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; font-family: 'Inter';">
-            <span style="font-size: 18px;">ðŸ </span> Particular
+            <span style="font-size: 18px;">🏠</span> Particular
           </button>
         </div>
         <button onclick="guardarCentro()" class="btn-naranja"
@@ -113,7 +113,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h3 style="margin: 0; color: white; font-size: 18px;">Directorio de Centros</h3>
           <input type="text" id="buscarEnDirectorio" class="input-modern" oninput="filtrarDirectorio()"
-            placeholder="ðŸ” Buscar por nombre o dirección..." style="width: 300px; margin: 0;">
+            placeholder="🔍 Buscar por nombre o dirección..." style="width: 300px; margin: 0;">
         </div>
         <div id="lista-centros-inline" class="table-scroll" style="max-height: 100%;">
         </div>
@@ -144,14 +144,14 @@
 
     const getIcon = (tipoRaw) => {
       const tipo = (tipoRaw || 'clinica').toLowerCase().trim();
-      let emoji = "ðŸš";
-      if (tipo === "moto") emoji = "ðŸï¸";
+      let emoji = "🚐";
+      if (tipo === "moto") emoji = "🏍️";
       if (tipo === "camion") emoji = "🚛";
 
       // Iconos para Centros Médicos
-      if (tipo === "hospital") emoji = "ðŸ¥";
+      if (tipo === "hospital") emoji = "🏥";
       if (tipo === "clinica") emoji = "🩺";
-      if (tipo === "particular") emoji = "ðŸ ";
+      if (tipo === "particular") emoji = "🏠";
 
       let bgColors = "linear-gradient(135deg, var(--accent-teal), #3b82f6)";
       if (tipo === "hospital") bgColors = "linear-gradient(135deg, #ef4444, #b91c1c)";
@@ -244,8 +244,8 @@
               <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">${c.direccion}</div>
             </div>
             <div style="display:flex; gap:10px;">
-              <button onclick="prepararEdicion('${c._id}', '${c.nombre}', '${c.direccion}', '${c.tipo}')" style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:white; border-radius:6px; cursor:pointer; font-size:14px; padding:6px 10px;">âœï¸</button>
-              <button onclick="eliminarCentro('${c._id}')" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; cursor:pointer; font-size:14px; padding:6px 10px;">ðŸ—‘ï¸</button>
+              <button onclick="prepararEdicion('${c._id}', '${c.nombre}', '${c.direccion}', '${c.tipo}')" style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); color:white; border-radius:6px; cursor:pointer; font-size:14px; padding:6px 10px;">✏️</button>
+              <button onclick="eliminarCentro('${c._id}')" style="background:rgba(239, 68, 68, 0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; cursor:pointer; font-size:14px; padding:6px 10px;">🗑️</button>
             </div>
           </div>
         `;
@@ -316,7 +316,7 @@
 
     function seleccionarCentro(c) {
       if (centrosTemporalesParaAsignar.length >= 7) {
-        return alert("MÃ¡ximo de 7 centros permitidos a la vez.");
+        return alert("Máximo de 7 centros permitidos a la vez.");
       }
       if (centrosTemporalesParaAsignar.find(x => x._id === c._id)) {
         return alert("Este centro ya está en la lista.");
@@ -551,6 +551,10 @@
           ? `<button class="btn-action btn-ver-ruta" title="Ver Ruta" onclick="abrirVentanaRuta('${v._id}'); event.stopPropagation();">📋</button>`
           : ``;
 
+        const btnEditarRuta = isEnRuta
+          ? `<button class="btn-action" title="Editar Ruta" onclick="abrirModalEditarRuta('${v._id}'); event.stopPropagation();" style="background:rgba(59, 130, 246, 0.1); border-color:rgba(59, 130, 246, 0.3); color:#3b82f6;">✏️</button>`
+          : ``;
+
         document.getElementById("lista").innerHTML += `
       <tr onclick="mostrarVista('mapa'); setTimeout(() => { map.setView([${lat}, ${lng}], 16); markers['${v._id}'].openPopup(); }, 100);">
         <td><b>${v.placa}</b></td>
@@ -559,7 +563,7 @@
         <td style="color:var(--text-muted)">${ayudanteTxt}</td>
         <td style="color:var(--text-muted)">
           ${horarioTxt}
-          ${isEnRuta ? `<span style="cursor:pointer; margin-left:8px; font-size:12px; opacity:0.6; hover:opacity:1" onclick="abrirModalEditarHorario('${v._id}', '${v.horaSalida}', '${v.horaRegreso}'); event.stopPropagation();" title="Editar Horario">âœï¸</span>` : ''}
+          ${isEnRuta ? `<span style="cursor:pointer; margin-left:8px; font-size:12px; opacity:0.6; hover:opacity:1" onclick="abrirModalEditarHorario('${v._id}', '${v.horaSalida}', '${v.horaRegreso}'); event.stopPropagation();" title="Editar Horario">✏️</span>` : ''}
         </td>
         <td style="color:var(--text-muted); max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${nombresDestinos}">${nombresDestinos}</td>
         <td style="text-align:center;"><b>${paradasTxt}</b></td>
@@ -567,6 +571,7 @@
         <td>
           <div style="display:flex; gap:5px; justify-content:center;">
             ${btnVerRuta}
+            ${btnEditarRuta}
             ${btnEntregar}
           </div>
         </td>
@@ -598,7 +603,7 @@
       let numParada = 1;
       v.ruta.forEach(punto => {
         if (punto.esParadaPrincipal) {
-          const icono = punto.estado === "completado" ? "ðŸŸ¢" : "🔴";
+          const icono = punto.estado === "completado" ? "🟢" : "🔴";
           const texto = punto.estado === "completado" ? "Entregado" : "Pendiente";
           const opacity = punto.estado === "completado" ? "0.6" : "1";
 
@@ -635,19 +640,46 @@
       renderizarCentrosTemporales();
       document.getElementById("buscadorCentro").value = "";
       document.getElementById("modal-asignar").style.display = "flex";
+      document.getElementById("modal-asignar-titulo").innerText = "Nueva Ruta";
+      document.getElementById("btn-despachar-ruta").innerText = "🚀 Despachar a Ruta";
+      
+      // Resetear campos
+      document.getElementById("vehiculoSelect").disabled = false;
+      document.getElementById("vehiculoSelect").value = "";
+      document.getElementById("inputAyudante").value = "";
+      document.getElementById("inputObservaciones").value = "";
     }
+
+    function abrirModalEditarRuta(id) {
+      const v = lastVehiculosData.find(veh => veh._id === id);
+      if (!v) return;
+
+      centrosTemporalesParaAsignar = v.ruta ? v.ruta.filter(p => p.esParadaPrincipal).map(p => ({
+        _id: p.centroId || "temp_" + Math.random(),
+        nombre: p.nombre,
+        lat: p.lat,
+        lng: p.lng
+      })) : [];
+
+      renderizarCentrosTemporales();
+      
+      document.getElementById("modal-asignar").style.display = "flex";
+      document.getElementById("modal-asignar-titulo").innerText = "Editar Ruta Existente";
+      document.getElementById("btn-despachar-ruta").innerText = "💾 Guardar Cambios";
+
+      document.getElementById("vehiculoSelect").value = id;
+      document.getElementById("vehiculoSelect").disabled = true; // No cambiar unidad al editar
+      
+      document.getElementById("inputAyudante").value = v.ayudante || "";
+      document.getElementById("inputHoraSalida").value = v.horaSalida || "06:00";
+      document.getElementById("inputHoraRegreso").value = v.horaRegreso || "14:00";
+      document.getElementById("inputObservaciones").value = v.observaciones || "";
+    }
+
     function cerrarModalAsignar() {
       document.getElementById("modal-asignar").style.display = "none";
       if (document.getElementById("inputAyudante")) document.getElementById("inputAyudante").value = "";
       if (document.getElementById("inputObservaciones")) document.getElementById("inputObservaciones").value = "";
-    }
-
-    // Modal Directorio
-    function abrirModalListaCentros() {
-      document.getElementById("modal-lista-centros").style.display = "flex";
-    }
-    function cerrarModalListaCentros() {
-      document.getElementById("modal-lista-centros").style.display = "none";
     }
 
     async function asignarRutaYcerrar() {
@@ -675,9 +707,10 @@
 
       const data = await res.json();
       if (data.error) {
-        alert("âš ï¸ " + data.error);
+        alert("⚠️ " + data.error);
       } else {
-        alert(`âœ… Carga estéril despachada exitosamente a ${centrosTemporalesParaAsignar.length} centros.`);
+        const isEdit = document.getElementById("modal-asignar-titulo").innerText.includes("Editar");
+        alert(isEdit ? "✅ Ruta actualizada correctamente." : `✅ Carga estéril despachada exitosamente a ${centrosTemporalesParaAsignar.length} centros.`);
         cerrarModalAsignar();
       }
     }
@@ -724,11 +757,11 @@
         <button onclick="cerrarVentanaRuta()" class="btn-close">✖</button>
       </div>
       <div id="modal-ruta-lista" class="modal-body">
-        <!-- Paradas renderizadas dinÃ¡micamente -->
+        <!-- Paradas renderizadas dinámicamente -->
       </div>
       <div class="modal-footer">
         <button onclick="limpiarRutaActual()"
-          style="background:#ef4444; width:100%; padding: 12px; border:none; border-radius: 8px; color:white; font-weight:bold; font-family:'Outfit'; cursor:pointer;">ðŸ—‘ï¸
+          style="background:#ef4444; width:100%; padding: 12px; border:none; border-radius: 8px; color:white; font-weight:bold; font-family:'Outfit'; cursor:pointer;">🗑️
           Cancelar / Limpiar Ruta</button>
       </div>
     </div>
@@ -782,7 +815,7 @@
           <div
             style="width: 45px; height: 45px; background: rgba(249, 115, 22, 0.1); color: var(--accent-orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
             📦</div>
-          <h3 style="margin: 0; font-size: 22px; font-weight: 600; color: white;">Nueva Ruta</h3>
+          <h3 id="modal-asignar-titulo" style="margin: 0; font-size: 22px; font-weight: 600; color: white;">Nueva Ruta</h3>
         </div>
         <button onclick="cerrarModalAsignar()" class="btn-close"
           style="align-self: flex-start; margin-top: 5px;">✖</button>
@@ -816,7 +849,7 @@
             <div style="grid-column: span 2; position: relative;">
               <label class="form-group-label">Sedes o Destinos Médicos (Hasta 7) <span>*</span></label>
               <input type="text" id="buscadorCentro" class="input-modern" oninput="filtrarCentros()"
-                placeholder="ðŸ” Buscar sede para agregar..." style="margin-bottom:0;">
+                placeholder="🔍 Buscar sede para agregar..." style="margin-bottom:0;">
               <div id="sugerenciasCentros"
                 style="display:none; position:absolute; top:70px; left:0; width:100%; background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; z-index:100; max-height:200px; overflow-y:auto; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
               </div>
@@ -847,7 +880,7 @@
       </div>
 
       <div class="modal-footer" style="border-top: none; display: flex; justify-content: flex-end; padding-top: 0;">
-        <button onclick="asignarRutaYcerrar()" class="btn-naranja">🚀 Despachar a Ruta</button>
+        <button id="btn-despachar-ruta" onclick="asignarRutaYcerrar()" class="btn-naranja">🚀 Despachar a Ruta</button>
       </div>
     </div>
   </div>
@@ -855,14 +888,15 @@
   <script>
     // Set auto date
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('fechaDespacho').value = today;
+    if (document.getElementById('fechaDespacho')) document.getElementById('fechaDespacho').value = today;
 
-    // Ayudantes DinÃ¡micos
+    // Ayudantes Dinámicos
     async function cargarAyudantes() {
       try {
         const res = await fetch("/api/ayudantes");
         const data = await res.json();
         const sel = document.getElementById("inputAyudante");
+        if (!sel) return;
         sel.innerHTML = '<option value="" style="color:black;">Sin ayudante...</option>';
         data.forEach(a => {
           sel.innerHTML += `<option value="${a.nombre}" style="color:black;">${a.nombre}</option>`;
