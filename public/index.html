@@ -167,6 +167,7 @@
 
     async function cargar() {
       await cargarCentros();
+      await cargarAyudantes();
       const res = await fetch('/api/vehiculos');
       actualizar(await res.json());
     }
@@ -183,6 +184,14 @@
           .bindPopup(`<b>${c.nombre}</b><br>${c.direccion}`);
       });
       renderDirectorio();
+    }
+
+    async function cargarAyudantes() {
+      const res = await fetch("/api/ayudantes");
+      const data = await res.json();
+      const sel = document.getElementById("inputAyudante");
+      sel.innerHTML = '<option value="">Sin ayudante...</option>';
+      data.forEach(a => sel.innerHTML += `<option value="${a.nombre}">${a.nombre}</option>`);
     }
 
     async function cargarHistorial() {
@@ -223,15 +232,13 @@
         document.getElementById('desc-vista-actual').innerText = "Gestión de rutas y despachos";
         document.getElementById('icon-vista-actual').innerText = "🚚";
         btnHeader.style.display = 'flex';
-        btnHeader.innerText = "+ Asignar punto de ruta";
-        btnHeader.onclick = abrirModalAsignar;
       } else if (vista === 'historial') {
         document.getElementById('titulo-vista-actual').innerText = "Historial";
         document.getElementById('desc-vista-actual').innerText = "Rutas completadas anteriormente";
         document.getElementById('icon-vista-actual').innerText = "📜";
         btnHeader.style.display = 'none';
         cargarHistorial();
-      } else if (vista === 'directorio') {
+      } else {
         btnHeader.style.display = 'none';
       }
 
@@ -294,8 +301,8 @@
         tbody.innerHTML += `
           <tr>
             <td><b>${v.placa}</b></td>
-            <td style="color:var(--text-muted)">${v.chofer}</td>
-            <td style="text-transform:capitalize;">${v.tipo}</td>
+            <td>${v.chofer}</td>
+            <td>${v.tipo}</td>
             <td>${v.ayudante || '-'}</td>
             <td>${enRuta ? `${v.horaSalida} - ${v.horaRegreso}` : '-'} ${enRuta ? `<span style="cursor:pointer;opacity:0.5;" onclick="abrirModalEditarHorario('${v._id}','${v.horaSalida}','${v.horaRegreso}');event.stopPropagation();">✏️</span>` : ''}</td>
             <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${destinos}">${destinos}</td>
@@ -313,6 +320,22 @@
       document.getElementById("modal-asignar").style.display = "flex";
       document.getElementById("modal-asignar-titulo").innerText = "Nueva Ruta";
       document.getElementById("vehiculoSelect").disabled = false;
+      document.getElementById("vehiculoSelect").value = "";
+    }
+
+    function abrirModalEditarRuta(id) {
+       const v = lastVehiculosData.find(veh => veh._id === id);
+       centrosTemporalesParaAsignar = v.ruta.filter(p => p.esParadaPrincipal).map(p => ({
+         _id: p._id, nombre: p.nombre, lat: p.lat, lng: p.lng
+       }));
+       renderizarCentrosTemporales();
+       document.getElementById("modal-asignar").style.display = "flex";
+       document.getElementById("modal-asignar-titulo").innerText = "Editar Ruta";
+       document.getElementById("vehiculoSelect").value = id;
+       document.getElementById("vehiculoSelect").disabled = true;
+       document.getElementById("inputAyudante").value = v.ayudante || "";
+       document.getElementById("inputHoraSalida").value = v.horaSalida || "06:00";
+       document.getElementById("inputHoraRegreso").value = v.horaRegreso || "14:00";
     }
 
     function renderizarCentrosTemporales() {
@@ -347,11 +370,37 @@
       document.getElementById("modal-asignar").style.display = "none";
     }
 
+    function abrirVentanaRuta(id) {
+       const v = lastVehiculosData.find(veh => veh._id === id);
+       let html = '';
+       v.ruta.filter(p => p.esParadaPrincipal).forEach((p, i) => {
+         html += `<div style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; opacity:${p.estado === 'completado' ? 0.5 : 1}"><span><b>${i+1}.</b> ${p.nombre}</span><span>${p.estado === 'completado' ? '✅' : '🔴'}</span></div>`;
+       });
+       document.getElementById("modal-ruta-lista").innerHTML = html;
+       document.getElementById("modal-ruta").style.display = "flex";
+    }
+
+    let editHorarioId = null;
+    function abrirModalEditarHorario(id, sal, reg) {
+      editHorarioId = id;
+      document.getElementById("editSalida").value = sal;
+      document.getElementById("editRegreso").value = reg;
+      document.getElementById("modal-editar-horario").style.display = "flex";
+    }
+
+    async function guardarHorario() {
+      await fetch(`/api/vehiculos/${editHorarioId}/horario`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ horaSalida: document.getElementById("editSalida").value, horaRegreso: document.getElementById("editRegreso").value })
+      });
+      document.getElementById("modal-editar-horario").style.display = "none";
+    }
+
     cargar();
-    setInterval(cargar, 5000);
   </script>
 
-  <!-- MODALES (Asignar, Ruta, Horario) -->
+  <!-- MODALES -->
   <div id="modal-asignar" class="modal-overlay">
     <div class="modal-content" style="max-width: 700px;">
       <div class="modal-header">
@@ -379,33 +428,25 @@
     </div>
   </div>
 
+  <div id="modal-editar-horario" class="modal-overlay">
+    <div class="modal-content" style="max-width:350px;">
+      <div class="modal-header"><h3>Editar Horario</h3><button onclick="document.getElementById('modal-editar-horario').style.display='none'" class="btn-close">✖</button></div>
+      <div class="modal-body">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div><label class="form-group-label">Salida</label><input type="time" id="editSalida" class="input-modern"></div>
+          <div><label class="form-group-label">Regreso</label><input type="time" id="editRegreso" class="input-modern"></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button onclick="guardarHorario()" class="btn-naranja" style="width:100%; justify-content:center;">Actualizar</button></div>
+    </div>
+  </div>
+
   <div id="modal-ruta" class="modal-overlay">
     <div class="modal-content">
       <div class="modal-header"><h3>Ruta Actual</h3><button onclick="document.getElementById('modal-ruta').style.display='none'" class="btn-close">✖</button></div>
       <div id="modal-ruta-lista" class="modal-body"></div>
     </div>
   </div>
-
-  <script>
-    async function cargarAyudantes() {
-      const res = await fetch("/api/ayudantes");
-      const data = await res.json();
-      const sel = document.getElementById("inputAyudante");
-      sel.innerHTML = '<option value="">Sin ayudante...</option>';
-      data.forEach(a => sel.innerHTML += `<option value="${a.nombre}">${a.nombre}</option>`);
-    }
-    cargarAyudantes();
-    
-    function abrirVentanaRuta(id) {
-       const v = lastVehiculosData.find(veh => veh._id === id);
-       let html = '';
-       v.ruta.filter(p => p.esParadaPrincipal).forEach((p, i) => {
-         html += `<div style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; opacity:${p.estado === 'completado' ? 0.5 : 1}"><span><b>${i+1}.</b> ${p.nombre}</span><span>${p.estado === 'completado' ? '✅' : '🔴'}</span></div>`;
-       });
-       document.getElementById("modal-ruta-lista").innerHTML = html;
-       document.getElementById("modal-ruta").style.display = "flex";
-    }
-  </script>
 
 </body>
 </html>
