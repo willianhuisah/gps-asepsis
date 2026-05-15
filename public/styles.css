@@ -246,7 +246,7 @@ body {
 }
 
 .premium-table tbody tr {
-  cursor: pointer;
+  cursor: default;
 }
 
 .premium-table tbody tr:hover td {
