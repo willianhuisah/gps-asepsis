@@ -556,7 +556,7 @@
           : ``;
 
         document.getElementById("lista").innerHTML += `
-      <tr onclick="mostrarVista('mapa'); setTimeout(() => { map.setView([${lat}, ${lng}], 16); markers['${v._id}'].openPopup(); }, 100);">
+      <tr>
         <td><b>${v.placa}</b></td>
         <td style="color:var(--text-muted)">${v.chofer}</td>
         <td style="color:var(--text-muted); text-transform:capitalize;">${v.tipo}</td>
