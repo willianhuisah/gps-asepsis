@@ -543,8 +543,8 @@
         const horarioTxt = isEnRuta && v.horaSalida ? `${v.horaSalida} - ${v.horaRegreso}` : '-';
         const ayudanteTxt = isEnRuta && v.ayudante ? v.ayudante : '-';
 
-        const btnEntregar = isEnRuta
-          ? `<button class="btn-action btn-entregar" title="Marcar Entregado" onclick="entregarManual('${v._id}'); event.stopPropagation();">✓</button>`
+        const btnSeguimiento = isEnRuta
+          ? `<button class="btn-action" title="Seguimiento en Vivo" onclick="mostrarVista('mapa'); setTimeout(() => { map.setView([${lat}, ${lng}], 16); markers['${v._id}'].openPopup(); }, 100); event.stopPropagation();" style="background:rgba(6, 182, 212, 0.1); border-color:rgba(6, 182, 212, 0.3); color:var(--accent-teal);">📍</button>`
           : ``;
 
         const btnVerRuta = isEnRuta
@@ -572,7 +572,7 @@
           <div style="display:flex; gap:5px; justify-content:center;">
             ${btnVerRuta}
             ${btnEditarRuta}
-            ${btnEntregar}
+            ${btnSeguimiento}
           </div>
         </td>
       </tr>

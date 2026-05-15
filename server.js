@@ -405,9 +405,9 @@ app.post("/api/vehiculos/:id/entregado", async (req, res) => {
         if (isPrincipal) break;
       }
 
-      // 🧹 LIMPIEZA AUTOMÁTICA: Si ya no quedan más puntos en la ruta
-      if (v.puntoActual >= v.ruta.length) {
-        console.log(`🧹 Limpiando ruta completada para ${v.placa}`);
+      // 🧹 LIMPIEZA AUTOMÁTICA MEJORADA
+      const paradasRestantes = v.ruta.slice(v.puntoActual).filter(p => p.esParadaPrincipal && p.estado !== 'completado');
+      if (paradasRestantes.length === 0) {
         v.ruta = [];
         v.puntoActual = 0;
         v.ayudante = "";
